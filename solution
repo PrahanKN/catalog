@@ -2,7 +2,7 @@
 #include <fstream>
 #include <cmath>
 #include <vector>
-#include <nlohmann/json.hpp>  // Include the JSON library
+#include <json.hpp>  // Include the JSON library
 
 using json = nlohmann::json;
 using namespace std;
