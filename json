@@ -1,0 +1,23 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int main() {
+    // JSON data
+    char *json_data = "{\"keys\":{\"n\":4,\"k\":3},\"1\":{\"base\":\"10\",\"value\":\"4\"},\"2\":{\"base\":\"2\",\"value\":\"111\"},\"3\":{\"base\":\"10\",\"value\":\"12\"},\"6\":{\"base\":\"4\",\"value\":\"213\"}}";
+
+    // Write JSON data to a file
+    FILE *file = fopen("output.json", "w");
+    if (file == NULL) {
+        printf("Error opening file.\n");
+        return 1;
+    }
+
+    fprintf(file, "%s", json_data);
+
+    fclose(file);
+
+    printf("JSON data written to output.json\n");
+
+    return 0;
+}
