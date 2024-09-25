@@ -1,27 +1,32 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include <iostream>
+#include <fstream>
+#include <cmath>
+#include <vector>
+#include <nlohmann/json.hpp>  // Include the JSON library
+
+using json = nlohmann::json;
+using namespace std;
 
 // Function to convert a string from a given base to an integer
-int convert_to_decimal(const char* value, int base) {
-    return strtol(value, NULL, base);  // Converts string to a long based on the given base
+int convertToDecimal(const std::string& value, int base) {
+    return stoi(value, nullptr, base);  // Converts the string based on the given base
 }
 
 // Function to compute the constant term using Lagrange Interpolation
-double lagrange_interpolation(int points[][2], int k) {
+double lagrangeInterpolation(const vector<pair<int, int>>& points) {
+    int k = points.size();  // number of points
     double constant_term = 0;
 
     for (int i = 0; i < k; ++i) {
-        int xi = points[i][0];
-        int yi = points[i][1];
+        double xi = points[i].first;
+        double yi = points[i].second;
 
         // Compute the Lagrange basis polynomial at x = 0
         double li = 1;
         for (int j = 0; j < k; ++j) {
             if (j != i) {
-                int xj = points[j][0];
-                li *= (double)-xj / (xi - xj);  // Evaluate l_i(0)
+                double xj = points[j].first;
+                li *= -xj / (xi - xj);  // Evaluate l_i(0)
             }
         }
         constant_term += yi * li;
@@ -30,53 +35,45 @@ double lagrange_interpolation(int points[][2], int k) {
     return constant_term;
 }
 
-// Main function to parse input and calculate the secret
 int main() {
-    char input[1000];
+    // Read JSON input from a file
+    std::ifstream inputFile("shares.json");
     
-    // Read input
-    fgets(input, sizeof(input), stdin);
+    // Check if file exists
+    if (!inputFile.is_open()) {
+        std::cerr << "Error: Could not open the file!" << std::endl;
+        return 1;
+    }
     
-    // Temporary variables to store parsed values
-    int n, k;
-    int points[10][2];  // Store up to 10 points, where points[i][0] = x and points[i][1] = y
-    int point_index = 0;
+    json test_case;
+    inputFile >> test_case;  // Load the JSON data
 
-    // Parsing the input manually since there is no JSON library available in C
-    char* token = strtok(input, "{\":,}");
-    
-    while (token != NULL) {
-        if (strcmp(token, "n") == 0) {
-            token = strtok(NULL, "{\":,}");
-            n = atoi(token);  // Read value of n
-        } else if (strcmp(token, "k") == 0) {
-            token = strtok(NULL, "{\":,}");
-            k = atoi(token);  // Read value of k
-        } else if (token[0] >= '0' && token[0] <= '9') {
-            int x = atoi(token);  // Use the key as x value
-            token = strtok(NULL, "{\":,}");
-            int base = atoi(token);  // Get base
+    vector<pair<int, int>> points;
 
-            token = strtok(NULL, "{\":,}");
-            char value_str[100];
-            strcpy(value_str, token);  // Copy the value string
+    // Extract the number of points needed (k)
+    int k = test_case["keys"]["k"];
 
-            // Convert value to decimal
-            int y = convert_to_decimal(value_str, base);
-
-            // Store the point (x, y)
-            points[point_index][0] = x;
-            points[point_index][1] = y;
-            point_index++;
+    // Extract the points from JSON, convert them to decimal based on the base
+    for (auto& [key, value] : test_case.items()) {
+        if (key != "keys") {
+            int base = stoi(value["base"].get<std::string>());
+            string valueStr = value["value"];
+            int xi = stoi(key);  // The share number is used as x
+            int yi = convertToDecimal(valueStr, base);  // Convert the value from the given base
+            points.emplace_back(xi, yi);
         }
-        token = strtok(NULL, "{\":,}");
     }
 
-    // Calculate the constant term (the secret) using the first k points
-    double constant_term = lagrange_interpolation(points, k);
+    // We only need the first k points for interpolation
+    if (points.size() > k) {
+        points.resize(k);
+    }
+
+    // Calculate the constant term (the secret)
+    double constant_term = lagrangeInterpolation(points);
 
     // Output the result
-    printf("%.0lf\n", constant_term);  // Output as integer-like format
+    std::cout << "The secret is: " << constant_term << std::endl;
 
     return 0;
 }
