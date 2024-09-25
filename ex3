@@ -1,1 +1,82 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
 
+// Function to convert a string from a given base to an integer
+int convert_to_decimal(const char* value, int base) {
+    return strtol(value, NULL, base);  // Converts string to a long based on the given base
+}
+
+// Function to compute the constant term using Lagrange Interpolation
+double lagrange_interpolation(int points[][2], int k) {
+    double constant_term = 0;
+
+    for (int i = 0; i < k; ++i) {
+        int xi = points[i][0];
+        int yi = points[i][1];
+
+        // Compute the Lagrange basis polynomial at x = 0
+        double li = 1;
+        for (int j = 0; j < k; ++j) {
+            if (j != i) {
+                int xj = points[j][0];
+                li *= (double)-xj / (xi - xj);  // Evaluate l_i(0)
+            }
+        }
+        constant_term += yi * li;
+    }
+
+    return constant_term;
+}
+
+// Main function to parse input and calculate the secret
+int main() {
+    char input[1000];
+    
+    // Read input
+    fgets(input, sizeof(input), stdin);
+    
+    // Temporary variables to store parsed values
+    int n, k;
+    int points[10][2];  // Store up to 10 points, where points[i][0] = x and points[i][1] = y
+    int point_index = 0;
+
+    // Parsing the input manually since there is no JSON library available in C
+    char* token = strtok(input, "{\":,}");
+    
+    while (token != NULL) {
+        if (strcmp(token, "n") == 0) {
+            token = strtok(NULL, "{\":,}");
+            n = atoi(token);  // Read value of n
+        } else if (strcmp(token, "k") == 0) {
+            token = strtok(NULL, "{\":,}");
+            k = atoi(token);  // Read value of k
+        } else if (token[0] >= '0' && token[0] <= '9') {
+            int x = atoi(token);  // Use the key as x value
+            token = strtok(NULL, "{\":,}");
+            int base = atoi(token);  // Get base
+
+            token = strtok(NULL, "{\":,}");
+            char value_str[100];
+            strcpy(value_str, token);  // Copy the value string
+
+            // Convert value to decimal
+            int y = convert_to_decimal(value_str, base);
+
+            // Store the point (x, y)
+            points[point_index][0] = x;
+            points[point_index][1] = y;
+            point_index++;
+        }
+        token = strtok(NULL, "{\":,}");
+    }
+
+    // Calculate the constant term (the secret) using the first k points
+    double constant_term = lagrange_interpolation(points, k);
+
+    // Output the result
+    printf("%.0lf\n", constant_term);  // Output as integer-like format
+
+    return 0;
+}
